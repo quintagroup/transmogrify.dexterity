@@ -17,6 +17,7 @@ from zope.schema.interfaces import IField
 from zope.schema.interfaces import IFromUnicode
 
 from interfaces import ISerializer, IDeserializer
+import base64
 
 
 class NamedFileSerializer(object):
@@ -56,7 +57,7 @@ class NamedFileDeserializer(object):
             if file is not None:
                 data = filestore[file]['data']
             else:
-                data = value['data']
+                data = base64.b64decode(value['data'])
         elif isinstance(value, str):
             data = value
             filename = item.get('_filename', None)
