@@ -1,5 +1,6 @@
 import mimetypes
 from datetime import datetime
+from DateTime import DateTime
 
 from plone.app.textfield.interfaces import IRichText
 from plone.app.textfield.value import RichTextValue
@@ -268,10 +269,15 @@ class DefaultDeserializer(object):
         field = self.field
         if field is not None:
             try:
+                if str(value) == 'None':
+                    value = None
                 if isinstance(value, str):
                     value = value.decode('utf-8')
                 if isinstance(value, unicode):
-                    value = IFromUnicode(field).fromUnicode(value)
+                    if field.__name__ in ['effective','expires']:
+                        value = DateTime(value).asdatetime()
+                    else:
+                        value = IFromUnicode(field).fromUnicode(value)
                 self.field.validate(value)
             except Exception, e:
                 if not disable_constraints:
