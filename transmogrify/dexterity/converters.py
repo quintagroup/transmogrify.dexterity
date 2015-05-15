@@ -4,7 +4,7 @@ from DateTime import DateTime
 
 from plone.app.textfield.interfaces import IRichText
 from plone.app.textfield.value import RichTextValue
-from plone.app.textfield.utils import getSiteEncoding
+#from plone.app.textfield.utils import getSiteEncoding
 
 from plone.namedfile.interfaces import INamedField
 from plone.supermodel.interfaces import IToUnicode
@@ -124,7 +124,7 @@ class RichTextDeserializer(object):
     
     def __call__(self, value, filestore, item, disable_constraints=False, logger=None):
         if isinstance(value, dict):
-            encoding = value.get('encoding', getSiteEncoding())
+            encoding = value.get('encoding', 'utf-8')
             contenttype = value.get('contenttype', None)
             if contenttype is not None:
                 contenttype = str(contenttype)
@@ -134,7 +134,7 @@ class RichTextDeserializer(object):
             else:
                 data = self._convert_object(value['data'],encoding)
         else:
-            encoding = getSiteEncoding()
+            encoding = 'utf-8'
             data = self._convert_object(value,encoding)
             contenttype = None
         if contenttype is None:
