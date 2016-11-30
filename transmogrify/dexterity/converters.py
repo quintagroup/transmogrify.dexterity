@@ -17,12 +17,6 @@ from zope.schema.interfaces import IDate
 from zope.schema.interfaces import IDatetime
 from zope.schema.interfaces import IField
 from zope.schema.interfaces import IFromUnicode
-
-from interfaces import ISerializer, IDeserializer
-import base64
-
-
-
 from zope.schema.interfaces import IObject
 import base64
 import mimetypes
