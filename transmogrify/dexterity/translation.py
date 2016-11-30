@@ -1,25 +1,30 @@
 from collective.transmogrifier.interfaces import ISection
 from collective.transmogrifier.interfaces import ISectionBlueprint
 from collective.transmogrifier.utils import defaultMatcher
-from transmogrify.dexterity.interfaces import ISerializer
 from plone.dexterity.interfaces import IDexterityContent
-from plone.dexterity.utils import iterSchemata
-from plone.uuid.interfaces import IUUID
 from zope.interface import classProvides
 from zope.interface import implementer
-from zope.schema import getFieldsInOrder
+try:
+    from plone.app.multilingual.interfaces import ILanguage
+    from plone.app.multilingual.interfaces import IMutableTG
+    PAM_AVAILABLE = True
+except ImportError:
+    PAM_AVAILABLE = False
 
 
 @implementer(ISection)
-class DexterityReaderSection(object):
+class DexterityTranslationSection(object):
     classProvides(ISectionBlueprint)
 
     def __init__(self, transmogrifier, name, options, previous):
+        if not PAM_AVAILABLE:
+            raise RuntimeError('``plone.app.multilingual`` not installed')
         self.previous = previous
         self.context = transmogrifier.context if transmogrifier.context else getSite()  # noqa
         self.name = name
         self.pathkey = defaultMatcher(options, 'path-key', name, 'path')
-        self.fileskey = options.get('files-key', '_files').strip()
+        self.langkey = options.get('lang-key', '_lang').strip()
+        self.tgkey = options.get('tg-key', '_tg').strip()
 
     def __iter__(self):
         for item in self.previous:
@@ -45,22 +50,18 @@ class DexterityReaderSection(object):
                 yield item
                 continue
 
-            uuid = IUUID(obj, None)
-            if uuid is not None:
-                item['plone.uuid'] = uuid
+            # fetch lang and translation group
+            lang = item.get(self.langkey)
+            tg = item.get(self.tgkey)
 
-            files = item.setdefault(self.fileskey, {})
+            # no translation
+            if not lang or not tg:
+                yield item
+                continue
 
-            # get all fields for this obj
-            for schemata in iterSchemata(obj):
-                for name, field in getFieldsInOrder(schemata):
-                    try:
-                        value = field.get(schemata(obj))
-                    except AttributeError:
-                        continue
-                    if value is field.missing_value:
-                        continue
-                    serializer = ISerializer(field)
-                    item[name] = serializer(value, files)
+            # set language and translation group
+            ILanguage(obj).set_language(lang)
+            IMutableTG(obj).set(tg)
+            obj.reindexObject()
 
             yield item

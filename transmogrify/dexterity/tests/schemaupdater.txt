@@ -8,7 +8,7 @@ Globals:
     >>> portal = layer.get('portal')
     >>> request = layer.get('request')
 
-Do some imports 
+Do some imports
 
     >>> from collective.transmogrifier.meta import registerConfig
     >>> from collective.transmogrifier.transmogrifier import Transmogrifier
@@ -57,6 +57,11 @@ get the filename in a seperated value from the pipeline:
     >>> two.test_file.data == zptlogo
     True
 
+empty default value is of type unicode:
+
+    >>> two.description
+    u''
+
 DateFields:
 
     >>> spam.test_date
@@ -64,7 +69,15 @@ DateFields:
 
     >>> two.test_date
     datetime.date(2010, 1, 1)
-    
+
+DatetimeFields:
+
+    >>> spam.test_datetime
+    datetime.datetime(2010, 10, 12, 17, 59, 59)
+
+    >>> two.test_datetime
+    datetime.datetime(2010, 1, 1, 17, 59, 59)
+
 Won't touch already existing values
 
     >>> transmogrifier = Transmogrifier(portal)

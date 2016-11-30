@@ -1,0 +1,31 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  i18n_domain="transmogrify.dexterity"
+  xmlns:zcml="http://namespaces.zope.org/zcml">
+
+  <adapter factory=".converters.NamedFileSerializer" />
+  <adapter factory=".converters.NamedFileDeserializer" />
+
+  <adapter factory=".converters.RichTextSerializer" />
+  <adapter factory=".converters.RichTextDeserializer" />
+
+  <adapter factory=".converters.ObjectSerializer" />
+  <adapter factory=".converters.ObjectDeserializer" />
+
+  <adapter factory=".converters.CollectionSerializer" />
+  <adapter factory=".converters.CollectionDeserializer" />
+
+  <adapter factory=".converters.DateDeserializer" />
+  <adapter factory=".converters.DatetimeDeserializer" />
+
+  <adapter factory=".converters.DefaultSerializer" />
+  <adapter factory=".converters.DefaultDeserializer" />
+
+  <configure zcml:condition="installed plone.app.intid">
+      <configure zcml:condition="installed z3c.relationfield">
+          <adapter factory=".converters.RelationDeserializer" />
+          <adapter factory=".converters.RelationListDeserializer" />
+      </configure>
+  </configure>
+
+</configure>

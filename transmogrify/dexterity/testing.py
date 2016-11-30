@@ -1,17 +1,28 @@
-from collective.transmogrifier.interfaces import ISectionBlueprint, ISection
+from collective.transmogrifier.interfaces import ISection
+from collective.transmogrifier.interfaces import ISectionBlueprint
 from collective.transmogrifier.sections.tests import SampleSource
-from plone.app.testing import IntegrationTesting, TEST_USER_ID, setRoles
-from plone.app.testing import PloneSandboxLayer
+from datetime import date
+from datetime import datetime
+from ftw.builder.testing import BUILDER_LAYER
+from ftw.builder.testing import functional_session_factory
+from ftw.builder.testing import set_builder_session_factory
+from plone.app.testing import applyProfile
+from plone.app.testing import FunctionalTesting
+from plone.app.testing import IntegrationTesting
 from plone.app.testing import PLONE_FIXTURE
+from plone.app.testing import PloneSandboxLayer
+from plone.app.testing import setRoles
+from plone.app.testing import TEST_USER_ID
 from plone.app.textfield import RichText
-from plone.dexterity.fti import DexterityFTI, register
+from plone.dexterity.fti import DexterityFTI
+from plone.dexterity.fti import register
 from plone.directives import form
 from plone.namedfile.field import NamedFile
 from zope import schema
 from zope.component import provideUtility
 from zope.configuration import xmlconfig
-from datetime import date
-from zope.interface import classProvides, implements
+from zope.interface import classProvides
+from zope.interface import implementer
 
 
 zptlogo = (
@@ -35,6 +46,7 @@ zptlogo = (
 
 
 class FakeImportContext(object):
+
     def __init__(self, filename, contents):
         self.filename = filename
         self.contents = contents
@@ -58,7 +70,11 @@ class ITestSchema(form.Schema):
     )
 
     test_date = schema.Date(
-        title = u'test_date',
+        title=u'test_date',
+    )
+
+    test_datetime = schema.Datetime(
+        title=u'test_datetime',
     )
 
     fancy_text = RichText(
@@ -68,19 +84,19 @@ class ITestSchema(form.Schema):
 
 class TransmogrifyDexterityLayer(PloneSandboxLayer):
 
-    defaultBases = (PLONE_FIXTURE, )
+    defaultBases = (PLONE_FIXTURE, BUILDER_LAYER)
 
     def setUpZope(self, app, configurationContext):
         # Load ZCML
         import transmogrify.dexterity
-        xmlconfig.file('meta.zcml',
-            transmogrify.dexterity, context=configurationContext)
-        xmlconfig.file('configure.zcml',
-            transmogrify.dexterity, context=configurationContext)
-        xmlconfig.file('tests.zcml',
-            transmogrify.dexterity, context=configurationContext)
+        xmlconfig.file(
+            'tests.zcml',
+            transmogrify.dexterity.tests,
+            context=configurationContext
+        )
 
     def setUpPloneSite(self, portal):
+        applyProfile(portal, 'plone.app.intid:default')
         # Install into Plone site using portal_setup
         setRoles(portal, TEST_USER_ID, ['Member', 'Contributor', 'Manager'])
 
@@ -91,20 +107,23 @@ class TransmogrifyDexterityLayer(PloneSandboxLayer):
         fti = DexterityFTI('TransmogrifyDexterityFTI')
         fti.schema = 'transmogrify.dexterity.testing.ITestSchema'
         fti.klass = 'plone.dexterity.content.Container'
-        fti.behaviors = (
-                         'plone.app.dexterity.behaviors.metadata.IBasic',
-                         )
+        fti.behaviors = ('plone.app.dexterity.behaviors.metadata.IBasic',)
         self.portal.portal_types._setObject('TransmogrifyDexterityFTI', fti)
         register(fti)
 
-
         # create test schema source and provide it
+        @implementer(ISection)
         class SchemaSource(SampleSource):
             classProvides(ISectionBlueprint)
-            implements(ISection)
 
             def __init__(self, transmogrifier, name, options, previous):
-                super(SchemaSource, self).__init__(transmogrifier, name, options, previous)
+                super(
+                    SchemaSource,
+                    self).__init__(
+                    transmogrifier,
+                    name,
+                    options,
+                    previous)
                 sourcecontent = options.get('source-content', 'full')
                 if sourcecontent == 'full':
                     self.sample = (
@@ -114,21 +133,24 @@ class TransmogrifyDexterityLayer(PloneSandboxLayer):
                              title='Spam',
                              description='Lorem Ipsum bla bla!',
                              test_file={
-                                'data': zptlogo,
-                                'filename': 'zptlogo.gif'},
+                                 'data': zptlogo,
+                                 'filename': 'zptlogo.gif'},
                              test_date='2010-10-12',
+                             test_datetime='2010-10-12 17:59:59',
                              fieldnotchanged='nochange',
-                        ),
+                             ),
                         dict(_path='/two',
                              foo='Bla',
                              _type='TransmogrifyDexterityFTI',
                              title='My Second Object',
-                             #description=None, # None is not valid for this field.
+                             # description=None, # None is not valid for this
+                             # field.
                              test_file=zptlogo,
                              _filename="testlogo.gif",
-                             test_date=date(2010, 01, 01, ),
+                             test_date=date(2010, 0o1, 0o1, ),
+                             test_datetime=datetime(2010, 0o1, 0o1, 17, 59, 59),
                              fieldnotchanged='nochange',
-                        ),
+                             ),
                     )
                 elif sourcecontent == 'onlytitle':
                     self.sample = (
@@ -140,10 +162,15 @@ class TransmogrifyDexterityLayer(PloneSandboxLayer):
                              title='My Awesome Second Object'),
                     )
         provideUtility(SchemaSource,
-            name=u'transmogrify.dexterity.testsource')
+                       name=u'transmogrify.dexterity.testsource')
 
 
 TRANSMOGRIFY_DEXTERITY_FIXTURE = TransmogrifyDexterityLayer()
 TRANSMOGRIFY_DEXTERITY_INTEGRATION_TESTING = IntegrationTesting(
     bases=(TRANSMOGRIFY_DEXTERITY_FIXTURE, ),
     name="TransmogrifyDexterity:Integration")
+
+TRANSMOGRIFY_DEXTERITY_FUNCTIONAL_TESTING = FunctionalTesting(
+    bases=(TRANSMOGRIFY_DEXTERITY_FIXTURE,
+           set_builder_session_factory(functional_session_factory)),
+    name="TransmogrifyDexterity:Functional")

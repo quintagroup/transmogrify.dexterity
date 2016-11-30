@@ -1,18 +1,18 @@
+from collective.transmogrifier.interfaces import ISection
+from collective.transmogrifier.interfaces import ISectionBlueprint
+from collective.transmogrifier.utils import defaultMatcher
+from zope.interface import classProvides
+from zope.interface import implementer
 import json
 
-from collective.transmogrifier.interfaces import ISection, ISectionBlueprint
-from collective.transmogrifier.utils import defaultMatcher
 
-from zope.interface import classProvides, implements
-
-
+@implementer(ISection)
 class SerializerSection(object):
     classProvides(ISectionBlueprint)
-    implements(ISection)
 
     def __init__(self, transmogrifier, name, options, previous):
         self.previous = previous
-        self.context = transmogrifier.context
+        self.context = transmogrifier.context if transmogrifier.context else getSite()  # noqa
 
         self.pathkey = defaultMatcher(options, 'path-key', name, 'path')
         self.fileskey = options.get('files-key', '_files').strip()
@@ -34,25 +34,31 @@ class SerializerSection(object):
                 yield item
                 continue
 
-            data = dict((key, value) for key, value in item.iteritems() if not key.startswith('_'))
+            data = dict(
+                (key,
+                 value) for key,
+                value in item.iteritems() if not key.startswith('_'))
             if not data:
                 yield item
                 continue
 
-
             files = item.setdefault(fileskey, {})
-            files[self.key] = dict(name='_content.json', data=self.encoder.encode(data), contenttype='application/json')
+            files[
+                self.key] = dict(
+                name='_content.json',
+                data=self.encoder.encode(data),
+                contenttype='application/json')
 
             yield item
 
 
+@implementer(ISection)
 class DeserializerSection(object):
     classProvides(ISectionBlueprint)
-    implements(ISection)
 
     def __init__(self, transmogrifier, name, options, previous):
         self.previous = previous
-        self.context = transmogrifier.context
+        self.context = transmogrifier.context if transmogrifier.context else getSite()  # noqa
 
         self.fileskey = defaultMatcher(options, 'files-key', name, 'files')
         self.key = options.get('key', 'content').strip()

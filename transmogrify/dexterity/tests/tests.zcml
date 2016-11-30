@@ -1,0 +1,17 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:transmogrifier="http://namespaces.plone.org/transmogrifier"
+  i18n_domain="transmogrify.dexterity">
+
+  <include package="collective.transmogrifier" />
+  <include package="plone.app.dexterity" />
+  <include package="transmogrify.dexterity" />
+  <include package="plone.app.intid" />
+
+  <transmogrifier:registerConfig
+      name="transmogrify.dexterity.testconfiguration"
+      title="Example pipeline configuration"
+      description="This is an example pipeline configuration"
+      configuration="tests.cfg" />
+
+</configure>
