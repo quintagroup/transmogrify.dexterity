@@ -4,8 +4,10 @@ from collective.transmogrifier.utils import defaultMatcher
 from plone.dexterity.interfaces import IDexterityContent
 from zope.interface import classProvides
 from zope.interface import implementer
+from Products.CMFPlone.interfaces import ILanguage
+
 try:
-    from plone.app.multilingual.interfaces import ILanguage
+    from plone.app.multilingual.interfaces import ITranslationManager
     from plone.app.multilingual.interfaces import IMutableTG
     PAM_AVAILABLE = True
 except ImportError:
@@ -61,6 +63,7 @@ class DexterityTranslationSection(object):
 
             # set language and translation group
             ILanguage(obj).set_language(lang)
+            ITranslationManager(obj).register_translation(lang, obj)
             IMutableTG(obj).set(tg)
             obj.reindexObject()
 

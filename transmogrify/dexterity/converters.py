@@ -21,6 +21,7 @@ from zope.schema.interfaces import IObject
 import base64
 import mimetypes
 import pkg_resources
+from zope.component.hooks import getSite
 
 
 try:
@@ -512,7 +513,12 @@ if INTID_AVAILABLE and RELATIONFIELD_AVAILABLE:
 
         def deserialize(self, value):
             result = []
+            cat = getSite().portal_catalog
             for obj in value:
+                if type(obj) in (unicode, str):
+                    b = cat(UID=obj)
+                    if b:
+                        obj = b[0].getObject()
                 result.append(
                     super(RelationListDeserializer, self).deserialize(obj))
             return result
